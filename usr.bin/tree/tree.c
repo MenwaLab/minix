@@ -49,7 +49,7 @@ tree(char *path, int depth)
         }
         // avoids infinite recursion into its parent or itself.
 
-        print(in->d_name, depth+1, info);
+        print(depth+1, in->d_name, info);
 
         if(S_ISDIR(info.st_mode))
         {
@@ -63,7 +63,7 @@ tree(char *path, int depth)
 int
 main(int argc, char *argv[])
 {
-    char *path = (argc > 1) ? argv[1] : ".";
+    const char *path = (argc > 1) ? argv[1] : ".";
     printf("%s\n", path);
     tree(path, 0);
     return 0;
