@@ -3,6 +3,9 @@
 #include <sys/stat.h>  
 #include <string.h> 
 
+void print(int depth, char *name, struct stat info);
+void tree(const char *path, int depth);
+
 void
 print(int depth, char *name, struct stat info)
 {
@@ -24,7 +27,7 @@ print(int depth, char *name, struct stat info)
 
 
 void
-tree(char *path, int depth)
+tree(const char *path, int depth)
 {
     DIR *handle = opendir(path);
 
