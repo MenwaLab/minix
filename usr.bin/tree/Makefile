@@ -3,5 +3,6 @@
 
 PROG=	tree
 SRCS=	tree.c 
+NOMAN=  yes
 
 .include <bsd.prog.mk>
