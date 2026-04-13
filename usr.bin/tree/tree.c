@@ -33,6 +33,7 @@ tree(const char *path, int depth)
 
     if(handle == NULL)
     {
+        fprintf(stderr, "tree: %s: No such file or directory\n", path);
         return;
     }
 
