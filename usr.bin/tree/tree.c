@@ -3,6 +3,7 @@
 #include <sys/stat.h>  
 #include <string.h> 
 
+
 void print(int depth, char *name, struct stat info);
 void tree(const char *path, int depth);
 
@@ -42,19 +43,29 @@ tree(const char *path, int depth)
 
     while((in = readdir(handle)) != NULL)
     {
-        char new_path[1024];
-        snprintf(new_path, sizeof(new_path), "%s/%s", path, in->d_name);
-
-        stat(new_path, &info);
-
-        if(strcmp(in->d_name, ".") == 0 || strcmp(in->d_name, "..") == 0)
+        // ignorar inmediatamente las entradas de navegación
+        if(strcmp(in->d_name, ".") == 0 || strcmp(in->d_name, "..") == 0) 
         {
             continue;
         }
-        // avoids infinite recursion into its parent or itself.
 
+        char new_path[1024];
+        snprintf(new_path, sizeof(new_path), "%s/%s", path, in->d_name);
+
+        //  detectar enlaces simbólicos sin seguirlos con lstat
+        if (lstat(new_path, &info) != 0) {
+            continue; // si falla el stat: saltar
+        }
+
+        // imrpime el archivo, directorio o link
         print(depth+1, in->d_name, info);
 
+        // si es link simbólico NO entra (evitar ciclos)
+        if (S_ISLNK(info.st_mode)) {
+            continue; 
+        }
+
+        // solo si es un directorio real entra recursivamente
         if(S_ISDIR(info.st_mode))
         {
             tree(new_path, depth+1);
