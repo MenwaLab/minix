@@ -96,8 +96,14 @@ int do_noquantum(message *m_ptr)
 	}
 
 	rmp = &schedproc[proc_nr_n];
-	if (rmp->priority < MIN_USER_Q) {
-		rmp->priority += 1; /* lower priority */
+
+	rmp->cnt_used_in_window++; //increase the counter
+
+	if (rmp->cnt_used_in_window >= 3) {
+		if (rmp->priority < MIN_USER_Q) { // does not decrease to the worst priority of the user
+			rmp->priority += 1; /* lower priority */
+		}
+		rmp->cnt_used_in_window = 0; // after penalizing, restart counter 
 	}
 
 	if ((rv = schedule_process_local(rmp)) != OK) {
@@ -221,6 +227,7 @@ int do_start_scheduling(message *m_ptr)
 		return rv;
 	}
 	rmp->flags = IN_USE;
+	rmp->cnt_used_in_window = 0; // makes sure the counter starts clean for the new process
 
 	/* Schedule the process, giving it some quantum */
 	pick_cpu(rmp);
@@ -357,10 +364,15 @@ void balance_queues(void)
 
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
-			if (rmp->priority > rmp->max_priority) {
-				rmp->priority -= 1; /* increase priority */
-				schedule_process_local(rmp);
+			if (rmp->cnt_used_in_window ==0) { // if it did not use any: pull priority up
+				// checks if its worse than its best allowed priority
+				if (rmp->priority > rmp->max_priority) { 
+					rmp->priority -= 1; /* increase priority */
+				}
 			}
+			rmp->cnt_used_in_window = 0; // reset counter for the new window
+			// by having it here at the start of each window, the kernel & scheduler are in sync
+			schedule_process_local(rmp); 
 		}
 	}
 
