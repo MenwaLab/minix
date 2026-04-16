@@ -7,6 +7,7 @@
 void print(int depth, char *name, struct stat info);
 void tree(const char *path, int depth);
 
+//metodo que se encarga del formateo de la jerarquia del sistema de archivos
 void
 print(int depth, char *name, struct stat info)
 {
@@ -14,18 +15,19 @@ print(int depth, char *name, struct stat info)
     {
         printf("    ");
     }
+    // insertar 4 espacios en blanco por cada nivel de profundidad
 
     if(S_ISDIR(info.st_mode))
     {
         printf("%s/\n", name);
     }
+    // en caso de ser carpeta, formatear con el estilo "nombre/"
     else
     {
         printf("%s\n", name);
     }
 
 }
-
 
 void
 tree(const char *path, int depth)
@@ -49,6 +51,7 @@ tree(const char *path, int depth)
             continue;
         }
 
+        // construccion de la nueva direccion usando la direccion actual y el nombre del directorio
         char new_path[1024];
         snprintf(new_path, sizeof(new_path), "%s/%s", path, in->d_name);
 

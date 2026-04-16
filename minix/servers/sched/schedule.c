@@ -103,7 +103,6 @@ int do_noquantum(message *m_ptr)
 		if (rmp->priority < MIN_USER_Q) { // does not decrease to the worst priority of the user
 			rmp->priority += 1; /* lower priority */
 		}
-		rmp->cnt_used_in_window = 0; // after penalizing, restart counter 
 	}
 
 	if ((rv = schedule_process_local(rmp)) != OK) {
