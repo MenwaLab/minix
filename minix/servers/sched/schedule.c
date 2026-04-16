@@ -99,7 +99,7 @@ int do_noquantum(message *m_ptr)
 
 	rmp->cnt_used_in_window++; //increase the counter
 
-	if (rmp->cnt_used_in_window >= 3) {
+	if (rmp->cnt_used_in_window == 3) {
 		if (rmp->priority < MIN_USER_Q) { // does not decrease to the worst priority of the user
 			rmp->priority += 1; /* lower priority */
 		}
