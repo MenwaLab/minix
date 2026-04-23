@@ -5,7 +5,7 @@
 
 
 void print(int depth, char *name, struct stat info);
-void tree(const char *path, int depth);
+void tree(const char *path, int depth, int *dirs, int *files);
 
 void
 print(int depth, char *name, struct stat info)
@@ -28,7 +28,7 @@ print(int depth, char *name, struct stat info)
 
 
 void
-tree(const char *path, int depth)
+tree(const char *path, int depth, int *dirs, int *files)
 {
     DIR *handle = opendir(path);
 
@@ -68,7 +68,11 @@ tree(const char *path, int depth)
         // solo si es un directorio real entra recursivamente
         if(S_ISDIR(info.st_mode))
         {
-            tree(new_path, depth+1);
+            (*dirs)++;
+            tree(new_path, depth+1, dirs, files);
+        }
+        else{
+            (*files)++;
         }
     }
 
@@ -78,8 +82,13 @@ tree(const char *path, int depth)
 int
 main(int argc, char *argv[])
 {
+    int dirs = 0;
+    int files = 0;
+
     const char *path = (argc > 1) ? argv[1] : ".";
+
     printf("%s\n", path);
-    tree(path, 0);
+    tree(path, 0, &dirs, &files);
+    printf("\n%d directories, %d files\n", dirs, files);
     return 0;
 }
