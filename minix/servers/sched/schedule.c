@@ -399,7 +399,7 @@ void balance_queues(void)
 				{
 					rmp->priority = rmp->max_priority; //resets to best possible priority
 					rmp->cnt_starvation = 0;
-					changed = 1
+					changed = 1;
 				}
 			}
 			else{
