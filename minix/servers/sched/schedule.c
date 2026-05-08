@@ -15,7 +15,14 @@
 
 static unsigned balance_timeout;
 
-#define BALANCE_TIMEOUT	5 /* how often to balance queues in seconds */
+// modified to 10s
+#define BALANCE_TIMEOUT	10 /* how often to balance queues in seconds */
+
+// amount of quantums a process can exhaust before being penalized 
+#define PENALTY_LIMIT	5 
+
+// amount of windows in min priority before priority boost
+#define STARVATION_LIMIT	3
 
 static int schedule_process(struct schedproc * rmp, unsigned flags);
 
@@ -97,14 +104,21 @@ int do_noquantum(message *m_ptr)
 
 	rmp = &schedproc[proc_nr_n];
 
-	rmp->cnt_used_in_window++; //increase the counter
+	// does not penalize system processes
 
-	if (rmp->cnt_used_in_window == 3) {
-		if (rmp->priority < MIN_USER_Q) { // does not decrease to the worst priority of the user
-			rmp->priority += 1; /* lower priority */
+	if (!is_system_proc(rmp))
+	{
+		rmp->cnt_used_in_window++;
+
+		// Penalization Logic
+		if (rmp->cnt_used_in_window >= PENALTY_LIMIT) {
+			if (rmp->priority < MIN_USER_Q) { // does not decrease to the worst priority of the user
+				rmp->priority += 1; /* lower priority */
+			}
+			rmp->cnt_used_in_window = 0; //reset so it can be penalized again 
 		}
 	}
-
+	
 	if ((rv = schedule_process_local(rmp)) != OK) {
 		return rv;
 	}
@@ -227,6 +241,7 @@ int do_start_scheduling(message *m_ptr)
 	}
 	rmp->flags = IN_USE;
 	rmp->cnt_used_in_window = 0; // makes sure the counter starts clean for the new process
+	rmp->cnt_starvation = 0; // inicialize anti-starvation counter
 
 	/* Schedule the process, giving it some quantum */
 	pick_cpu(rmp);
@@ -363,15 +378,41 @@ void balance_queues(void)
 
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
+
+			// reschedules every process only when necessary (changed = 1), increases efficiency
+			int changed = 0; 
+
+			// Promotion Logic
 			if (rmp->cnt_used_in_window ==0) { // if it did not use any: pull priority up
-				// checks if its worse than its best allowed priority
-				if (rmp->priority > rmp->max_priority) { 
+				if (rmp->priority > rmp->max_priority) { // checks if its worse than its best allowed priority
 					rmp->priority -= 1; /* increase priority */
+					rmp->cnt_starvation = 0;
+					changed = 1;
 				}
 			}
+
+			//Priority Boost Logic
+			else if (rmp->priority >= MIN_USER_Q)
+			{
+				rmp->cnt_starvation++;
+				if (rmp->cnt_starvation >= STARVATION_LIMIT)
+				{
+					rmp->priority = rmp->max_priority; //resets to best possible priority
+					rmp->cnt_starvation = 0;
+					changed = 1
+				}
+			}
+			else{
+				rmp->cnt_starvation = 0; //not in danger of starvation
+			}
+			
 			rmp->cnt_used_in_window = 0; // reset counter for the new window
-			// by having it here at the start of each window, the kernel & scheduler are in sync
-			schedule_process_local(rmp); 
+
+			// notifies kernel only when necessary
+			if (changed)
+			{
+				schedule_process_local(rmp); 
+			}
 		}
 	}
 

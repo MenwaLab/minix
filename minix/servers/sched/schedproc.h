@@ -34,7 +34,11 @@ EXTERN struct schedproc {
 								process allowed
 								to run on */
 
-	int cnt_used_in_window; // counter of the complete quantums for each process (in the curr window)
+	// counter for the amount of times a process exhausts(in the curr window)
+	int cnt_used_in_window; 
+
+	// counter of the times a process is in the min priority, prevents starvation
+	int cnt_starvation; 
 } schedproc[NR_PROCS];
 
 /* Flag values */
